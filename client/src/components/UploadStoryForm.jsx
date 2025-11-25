@@ -2,10 +2,12 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
 
-export default function UploadStoryForm({ placeId, onUploaded }) {
+export default function UploadStoryForm({ place, isOpen, onClose }) {
   const [file, setFile] = useState(null);
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
+
+  if (!isOpen) return null;
 
   const handleFile = (e) => setFile(e.target.files?.[0] || null);
 
@@ -19,7 +21,7 @@ export default function UploadStoryForm({ placeId, onUploaded }) {
       const token = await auth.currentUser.getIdToken();
       const fd = new FormData();
       fd.append('image', file);
-      fd.append('placeId', placeId || '');
+      fd.append('placeId', place?.id || place?.placeId || place?.name || '');
       fd.append('caption', caption || '');
 
       const resp = await fetch('http://localhost:4000/api/upload-story', {
@@ -31,9 +33,9 @@ export default function UploadStoryForm({ placeId, onUploaded }) {
       const data = await resp.json();
       if (!resp.ok) throw data;
       alert('Upload successful');
-      if (onUploaded) onUploaded(data.story);
       setFile(null);
       setCaption('');
+      if (onClose) onClose();
     } catch (err) {
       console.error('upload error', err);
       alert('Upload failed: ' + (err?.error || err?.message || JSON.stringify(err)));
@@ -43,14 +45,20 @@ export default function UploadStoryForm({ placeId, onUploaded }) {
   };
 
   return (
-    <form onSubmit={handleUpload} style={{ padding: 8 }}>
-      <input type="file" accept="image/*" onChange={handleFile} disabled={loading} />
-      <div>
-        <input value={caption} onChange={(e)=>setCaption(e.target.value)} placeholder="Caption (optional)" disabled={loading} />
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h2>Upload Story for {place?.name}</h2>
+        <form onSubmit={handleUpload} style={{ padding: 8 }}>
+          <input type="file" accept="image/*" onChange={handleFile} disabled={loading} />
+          <div>
+            <input value={caption} onChange={(e)=>setCaption(e.target.value)} placeholder="Caption (optional)" disabled={loading} />
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <button type="submit" className="btn-primary" disabled={loading}>{loading ? 'Uploading…' : 'Upload'}</button>
+            <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>Cancel</button>
+          </div>
+        </form>
       </div>
-      <div style={{ marginTop: 8 }}>
-        <button type="submit" disabled={loading}>{loading ? 'Uploading…' : 'Upload Story'}</button>
-      </div>
-    </form>
+    </div>
   );
 }

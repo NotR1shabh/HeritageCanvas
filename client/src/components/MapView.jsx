@@ -30,6 +30,13 @@ export default function MapView({ places, center = [20.5937, 78.9629], zoom = 5,
   const markerRefs = useRef({});
   const markerLayerRef = useRef(null);
 
+  // Clean up marker refs when items change
+  useEffect(() => {
+    return () => {
+      markerRefs.current = {};
+    };
+  }, [items]);
+
   return (
     <div style={{ height: '100vh', width: '100%' }}>
       <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
