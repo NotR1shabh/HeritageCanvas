@@ -5,9 +5,6 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { firebaseConfig } from './firebaseConfig';
 
-// Diagnostic log (temporary)
-console.log('FIREBASE CONFIG LOADED:', firebaseConfig);
-
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
