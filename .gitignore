@@ -1,1 +1,7 @@
+﻿node_modules/
+*.log
+server/node_modules/
+client/node_modules/
+client/dist/
+.env
 server/serviceAccountKey.json
