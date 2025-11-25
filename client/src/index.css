@@ -1,0 +1,31 @@
+/* ====== Heritage Canvas Global Styles ====== */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap');
+
+:root {
+  --sidebar-collapsed-width: 80px;
+  --sidebar-expanded-width: 340px;
+  --accent: #3498db;
+  --bg: #ffffff;
+  --glass: rgba(255,255,255,0.9);
+  --shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  overflow: hidden;
+}
+
+body {
+  background: #f3f6fa;
+}
+
+/* Hide Leaflet default zoom controls */
+.leaflet-control-zoom {
+  display: none !important;
+}
