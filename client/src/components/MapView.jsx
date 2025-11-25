@@ -112,15 +112,6 @@ function MapController({ focusedPlace, selectedPlace, markerRefs, markerLayerRef
     if (markerLayer.getLayers().length) {
       const bounds = markerLayer.getBounds();
       map.fitBounds(bounds.pad(0.15), { animate: true, maxZoom: 10 });
-
-      // Demo popup animation for first 3 markers
-      const demoMarkers = markerLayer.getLayers().slice(0, 3);
-      demoMarkers.forEach((m, idx) => {
-        setTimeout(() => {
-          m.openPopup();
-          setTimeout(() => m.closePopup(), 1400);
-        }, idx * 600);
-      });
     } else {
       map.setView([20.5937, 78.9629], 5);
     }

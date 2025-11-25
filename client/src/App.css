@@ -303,32 +303,6 @@
   color: #fff;
 }
 
-.presentation-mode-btn {
-  padding: 10px 18px;
-  border-radius: 999px;
-  background: var(--glass);
-  border: 2px solid var(--accent);
-  color: var(--accent);
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: var(--shadow);
-  transition: all 220ms ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.presentation-mode-btn:hover {
-  background: var(--accent);
-  color: white;
-  transform: translateY(-2px);
-}
-
-.presentation-mode-btn.active {
-  background: var(--accent);
-  color: white;
-}
-
 /* Timeline (bottom center) */
 .timeline {
   position: fixed;
@@ -790,21 +764,5 @@
   
   .details-sidebar.open {
     right: 0;
-  }
-}
-
-/* Presentation Mode Enhancements */
-body.presentation-mode {
-  .timeline {
-    transform: translateX(-50%) scale(1.1);
-  }
-  
-  .filter-btn {
-    height: 54px;
-    font-size: 1.05rem;
-  }
-  
-  .logo {
-    font-size: 1.8rem;
   }
 }

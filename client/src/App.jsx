@@ -25,7 +25,6 @@ export default function App() {
   const [activeEpic, setActiveEpic] = useState(null);
   const [activeYear, setActiveYear] = useState(2025);
   const [searchQuery, setSearchQuery] = useState('');
-  const [presentationMode, setPresentationMode] = useState(false);
 
   useEffect(() => {
     console.log('Fetching heritage sites data...');
@@ -142,7 +141,7 @@ export default function App() {
   }
 
   return (
-    <div className={`app ${presentationMode ? 'presentation-mode' : ''}`}>
+    <div className="app">
       {/* Top controls */}
       <div className="top-controls">
         <button 
@@ -151,14 +150,6 @@ export default function App() {
           aria-label="Toggle sidebar"
         >
           <i className="fas fa-bars"></i>
-        </button>
-        <button
-          className={`presentation-mode-btn ${presentationMode ? 'active' : ''}`}
-          onClick={() => setPresentationMode(!presentationMode)}
-          title="Toggle presentation mode"
-        >
-          <i className="fas fa-presentation"></i>
-          <span>Present</span>
         </button>
       </div>
 
