@@ -3,6 +3,7 @@ import React, { useMemo, useRef, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import CustomZoom from './CustomZoom';
 
 // Leaflet default icon fix
 delete L.Icon.Default.prototype._getIconUrl;
@@ -84,6 +85,7 @@ export default function MapView({ places, center = [20.5937, 78.9629], zoom = 5,
             </Marker>
           );
         })}
+        <CustomZoom />
       </MapContainer>
     </div>
   );

@@ -1,9 +1,9 @@
 // client/src/App.jsx
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import './App.css';
 import MapView from './components/MapView';
-import Sidebar from './components/Sidebar';
+import EnhancedSidebar from './components/EnhancedSidebar';
+import Timeline from './components/Timeline';
 import DetailsPanel from './components/DetailsPanel';
 import PlanTripModal from './components/PlanTripModal';
 import UploadStoryForm from './components/UploadStoryForm';
@@ -20,6 +20,12 @@ export default function App() {
   const [isUploadOpen, setUploadOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeEpic, setActiveEpic] = useState(null);
+  const [activeYear, setActiveYear] = useState(2025);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [presentationMode, setPresentationMode] = useState(false);
 
   useEffect(() => {
     console.log('Fetching heritage sites data...');
@@ -54,21 +60,50 @@ export default function App() {
     return () => unsub();
   }, []);
 
-  const onFilterChange = ({ query, category, maxYear }) => {
-    if (!places) return;
-    const q = (query || '').trim().toLowerCase();
+  // Filter logic
+  useEffect(() => {
+    if (!places.length) return;
 
-    const result = places.filter(p => {
-      if (category && category !== 'all' && p.category !== category) return false;
-      if (p.year && p.year > (maxYear || Infinity)) return false;
-      if (q) {
+    let result = places;
+
+    // Category filter
+    if (activeCategory && activeCategory !== 'all') {
+      result = result.filter(p => p.category === activeCategory);
+    }
+
+    // Epic filter
+    if (activeEpic) {
+      result = result.filter(p => p.epic === activeEpic);
+    }
+
+    // Year filter
+    if (activeYear) {
+      result = result.filter(p => !p.year || Number(p.year) <= Number(activeYear));
+    }
+
+    // Search filter
+    if (searchQuery) {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter(p => {
         const hay = `${p.name} ${p.info || ''} ${p.details || ''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
+        return hay.includes(q);
+      });
+    }
 
     setFiltered(result);
+  }, [places, activeCategory, activeEpic, activeYear, searchQuery]);
+
+  const handleFilterChange = ({ category, epic }) => {
+    setActiveCategory(category);
+    setActiveEpic(epic);
+  };
+
+  const handleYearChange = (year) => {
+    setActiveYear(year);
+  };
+
+  const handleSearchChange = (query) => {
+    setSearchQuery(query);
   };
 
   // Called by MapView when user clicks *inside the popup*
@@ -107,7 +142,77 @@ export default function App() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw' }}>
+    <div className={`app ${presentationMode ? 'presentation-mode' : ''}`}>
+      {/* Top controls */}
+      <div className="top-controls">
+        <button 
+          className={`hamburger ${sidebarExpanded ? 'open' : ''}`}
+          onClick={() => setSidebarExpanded(!sidebarExpanded)}
+          aria-label="Toggle sidebar"
+        >
+          <i className="fas fa-bars"></i>
+        </button>
+        <button
+          className={`presentation-mode-btn ${presentationMode ? 'active' : ''}`}
+          onClick={() => setPresentationMode(!presentationMode)}
+          title="Toggle presentation mode"
+        >
+          <i className="fas fa-presentation"></i>
+          <span>Present</span>
+        </button>
+      </div>
+
+      {/* Sidebar */}
+      <EnhancedSidebar
+        expanded={sidebarExpanded}
+        onToggle={() => setSidebarExpanded(!sidebarExpanded)}
+        onFilterChange={handleFilterChange}
+        activeCategory={activeCategory}
+        activeEpic={activeEpic}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+      />
+
+      {/* Map */}
+      <div style={{ flex: 1, position: 'relative' }}>
+        <MapView 
+          places={filtered} 
+          onSelectPlace={handleSelectPlace} 
+          focusedPlace={focusedPlace} 
+          selectedPlace={selectedPlace} 
+        />
+      </div>
+
+      {/* Timeline */}
+      <Timeline 
+        year={activeYear}
+        onYearChange={handleYearChange}
+        minYear={-500}
+        maxYear={2025}
+      />
+
+      {/* Details Panel */}
+      <DetailsPanel 
+        place={selectedPlace} 
+        onClose={handleCloseDetails} 
+        onOpenTrip={openPlanTrip}
+        onOpenUpload={openUploadStory}
+      />
+
+      {/* Modals */}
+      <PlanTripModal
+        place={selectedPlace}
+        isOpen={isPlanTripOpen}
+        onClose={closeModals}
+      />
+
+      <UploadStoryForm
+        place={selectedPlace}
+        isOpen={isUploadOpen}
+        onClose={closeModals}
+      />
+
+      {/* Logout button */}
       {user && (
         <button
           onClick={() => signOut(auth)}
@@ -120,34 +225,13 @@ export default function App() {
             background: '#222',
             color: '#fff',
             borderRadius: 6,
-            border: 'none'
+            border: 'none',
+            cursor: 'pointer'
           }}
         >
           Logout
         </button>
       )}
-      <Sidebar places={places} onFilterChange={onFilterChange} onFocusPlace={handleFocusPlace} />
-      <div style={{ flex: 1, position: 'relative' }}>
-        <MapView places={filtered} onSelectPlace={handleSelectPlace} focusedPlace={focusedPlace} selectedPlace={selectedPlace} />
-      </div>
-      <DetailsPanel 
-        place={selectedPlace} 
-        onClose={handleCloseDetails} 
-        onOpenTrip={openPlanTrip}
-        onOpenUpload={openUploadStory}
-      />
-
-      <PlanTripModal
-        place={selectedPlace}
-        isOpen={isPlanTripOpen}
-        onClose={closeModals}
-      />
-
-      <UploadStoryForm
-        place={selectedPlace}
-        isOpen={isUploadOpen}
-        onClose={closeModals}
-      />
     </div>
   );
 }
