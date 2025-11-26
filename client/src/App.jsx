@@ -25,6 +25,9 @@ export default function App() {
   const [activeEpic, setActiveEpic] = useState(null);
   const [activeYear, setActiveYear] = useState(2025);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null); // 'trip' or 'story'
+  const [isAuthFormOpen, setAuthFormOpen] = useState(false);
 
   useEffect(() => {
     console.log('Fetching heritage sites data...');
@@ -119,17 +122,47 @@ export default function App() {
     setFocusedPlace(place || null);
   };
 
-  const openPlanTrip = () => setPlanTripOpen(true);
-  const openUploadStory = () => setUploadOpen(true);
+  const openPlanTrip = () => {
+    if (!user) {
+      setPendingAction('trip');
+      setShowAuthPrompt(true);
+    } else {
+      setPlanTripOpen(true);
+    }
+  };
+
+  const openUploadStory = () => {
+    if (!user) {
+      setPendingAction('story');
+      setShowAuthPrompt(true);
+    } else {
+      setUploadOpen(true);
+    }
+  };
 
   const closeModals = () => {
     setPlanTripOpen(false);
     setUploadOpen(false);
+    setShowAuthPrompt(false);
+    setAuthFormOpen(false);
   };
 
-  if (!user) {
-    return <AuthForm />;
-  }
+  const handleLoginSuccess = () => {
+    setAuthFormOpen(false);
+    setShowAuthPrompt(false);
+    // Auto-open the intended action after login
+    if (pendingAction === 'trip') {
+      setPlanTripOpen(true);
+    } else if (pendingAction === 'story') {
+      setUploadOpen(true);
+    }
+    setPendingAction(null);
+  };
+
+  const openAuthForm = () => {
+    setShowAuthPrompt(false);
+    setAuthFormOpen(true);
+  };
 
   if (loading) {
     return (
@@ -203,8 +236,8 @@ export default function App() {
         onClose={closeModals}
       />
 
-      {/* Logout button */}
-      {user && (
+      {/* Login/Logout button */}
+      {user ? (
         <button
           className="logout-btn"
           onClick={() => signOut(auth)}
@@ -213,6 +246,56 @@ export default function App() {
           <i className="fas fa-sign-out-alt"></i>
           <span>Logout</span>
         </button>
+      ) : (
+        <button
+          className="logout-btn"
+          onClick={() => setAuthFormOpen(true)}
+          title="Sign in"
+        >
+          <i className="fas fa-sign-in-alt"></i>
+          <span>Login</span>
+        </button>
+      )}
+
+      {/* Auth Prompt Modal */}
+      {showAuthPrompt && (
+        <div className="modal-overlay" onClick={() => setShowAuthPrompt(false)}>
+          <div className="modal-box auth-prompt-box" onClick={(e) => e.stopPropagation()}>
+            <h2 style={{ marginBottom: '16px', textAlign: 'center' }}>
+              <i className="fas fa-lock" style={{ color: 'var(--accent)', marginRight: '10px' }}></i>
+              Login Required
+            </h2>
+            <p style={{ textAlign: 'center', color: '#555', marginBottom: '24px', lineHeight: '1.6' }}>
+              Please login to {pendingAction === 'trip' ? 'plan your trip' : 'upload your story'}.
+              <br />Create an account or sign in to continue.
+            </p>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button className="btn-primary" onClick={openAuthForm}>
+                <i className="fas fa-sign-in-alt" style={{ marginRight: '8px' }}></i>
+                Login Now
+              </button>
+              <button className="btn-secondary" onClick={() => setShowAuthPrompt(false)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auth Form Modal */}
+      {isAuthFormOpen && (
+        <div className="modal-overlay" onClick={closeModals}>
+          <div className="modal-box auth-form-box" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+            <button 
+              className="close-btn" 
+              onClick={closeModals}
+              style={{ position: 'absolute', top: '10px', right: '10px' }}
+            >
+              ×
+            </button>
+            <AuthForm onSuccess={handleLoginSuccess} />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -895,6 +895,36 @@
   font-size: 1rem;
 }
 
+/* Auth Prompt & Form Boxes */
+.auth-prompt-box {
+  max-width: 450px;
+  text-align: center;
+}
+
+.auth-prompt-box h2 {
+  font-size: 1.6rem;
+  color: #2c3e50;
+}
+
+.auth-prompt-box p {
+  font-size: 1rem;
+}
+
+.auth-form-box {
+  max-width: 500px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.auth-form-box .close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 36px;
+  height: 36px;
+  font-size: 28px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 900px) {
   .timeline {

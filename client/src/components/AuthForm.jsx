@@ -25,7 +25,7 @@ const isValidEmail = (v) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 };
 
-export default function AuthForm() {
+export default function AuthForm({ onSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -87,6 +87,9 @@ export default function AuthForm() {
     try {
       await signInWithEmailAndPassword(auth, em, pw);
       showMessage('Signed in successfully.');
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 500);
+      }
     } catch (err) {
       const userMsg = mapAuthError(err);
       showMessage(userMsg);
@@ -122,6 +125,9 @@ export default function AuthForm() {
     try {
       await createUserWithEmailAndPassword(auth, em, pw);
       showMessage('Account created — you are now signed in.');
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 500);
+      }
     } catch (err) {
       const userMsg = mapAuthError(err);
       showMessage(userMsg);
@@ -138,6 +144,9 @@ export default function AuthForm() {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       showMessage('Signed in with Google.');
+      if (onSuccess) {
+        setTimeout(() => onSuccess(), 500);
+      }
     } catch (err) {
       const userMsg = mapAuthError(err);
       showMessage(userMsg);
