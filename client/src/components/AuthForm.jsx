@@ -31,6 +31,7 @@ export default function AuthForm({ onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
   const [message, setMessage] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const clearMessage = () => setMessage(null);
 
@@ -46,14 +47,17 @@ export default function AuthForm({ onSuccess }) {
     if (!err || !err.code) return err?.message || 'Unknown error';
     switch (err.code) {
       case 'auth/invalid-email': return 'Invalid email address. Use format name@example.com';
-      case 'auth/user-not-found': return 'No account found for that email. Please sign up first.';
-      case 'auth/wrong-password': return 'Incorrect password. Try again or reset your password.';
+      case 'auth/user-not-found': return 'Incorrect email or password. Please try again.';
+      case 'auth/wrong-password': return 'Incorrect email or password. Please try again.';
+      case 'auth/invalid-credential': return 'Incorrect email or password. Please try again.';
       case 'auth/email-already-in-use': return 'Email already registered. Try logging in or reset password.';
       case 'auth/weak-password': return 'Password too weak. Use at least 6 characters.';
       case 'auth/too-many-requests': return 'Too many attempts. Try again later.';
       case 'auth/network-request-failed': return 'Network error — check your connection.';
       default:
-        return err.message || err.code || 'Authentication error';
+        // Remove Firebase prefix if present
+        const msg = err.message || err.code || 'Authentication error';
+        return msg.replace(/^Firebase:\s*/i, '').replace(/\(auth\/[^)]+\)/g, '').trim() || 'Authentication error';
     }
   };
 
@@ -185,7 +189,15 @@ export default function AuthForm({ onSuccess }) {
       <h2 style={{ marginTop: 0, opacity: 0.9 }}>{mode === 'login' ? 'Login' : 'Create account'}</h2>
 
       {message && (
-        <div style={{ marginBottom: 12, padding: 10, background: '#fff3cd', borderRadius: 6, color: '#665b00' }}>
+        <div style={{ 
+          marginBottom: 12, 
+          padding: '8px 12px', 
+          background: '#fee', 
+          borderRadius: 6, 
+          color: '#e63946',
+          fontSize: '13px',
+          border: '1px solid #fcc'
+        }}>
           {message}
         </div>
       )}
@@ -195,7 +207,7 @@ export default function AuthForm({ onSuccess }) {
           <label style={{ display: 'block', fontSize: 13 }}>Email</label>
           <input
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); clearMessage(); }}
             type="email"
             placeholder="name@example.com"
             style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ddd' }}
@@ -205,14 +217,40 @@ export default function AuthForm({ onSuccess }) {
 
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 13 }}>Password</label>
-          <input
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            type="password"
-            placeholder="Your password"
-            style={{ width: '100%', padding: 10, borderRadius: 6, border: '1px solid #ddd' }}
-            disabled={loading}
-          />
+          <div style={{ position: 'relative' }}>
+            <input
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); clearMessage(); }}
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Your password"
+              style={{ width: '100%', padding: 10, paddingRight: 45, borderRadius: 6, border: '1px solid #ddd' }}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={loading}
+              style={{
+                position: 'absolute',
+                right: 10,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 5,
+                color: '#666',
+                fontSize: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+            >
+              <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14 }}>
