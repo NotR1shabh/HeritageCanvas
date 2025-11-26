@@ -34,47 +34,47 @@ export default function DetailsPanel({ place, onClose, onOpenTrip, onOpenUpload 
 
   return (
     <aside
-      className={`details-drawer ${isOpen ? 'open' : 'closed'}`}
+      className={`details-sidebar ${isOpen ? 'open' : ''}`}
       aria-hidden={!isOpen}
     >
-      <div className="drawer-header">
-        <button className="drawer-close" onClick={() => onClose && onClose()} aria-label="Close details">✕</button>
-      </div>
+      <button className="close-btn" onClick={() => onClose && onClose()} aria-label="Close details">×</button>
 
       {place ? (
-        <div className="drawer-body">
-          <h2>{place.name}</h2>
-          {place.image_url && <img src={place.image_url} alt={place.name} className="drawer-image" />}
-          <p style={{ whiteSpace: 'pre-wrap' }}>{place.details || place.info}</p>
-          <div className="drawer-meta">
-            <div><strong>Category:</strong> {place.category}</div>
-            <div><strong>Year:</strong> {place.year}</div>
+        <div className="details-content">
+          {place.image_url && <img src={place.image_url} alt={place.name} id="detailsImage" />}
+          <h2 id="detailsName">{place.name}</h2>
+          <div className="details-meta">
+            <div><strong>Category:</strong> {place.category || 'N/A'}</div>
+            <div id="detailsYear"><strong>Year:</strong> {place.year || 'N/A'}</div>
           </div>
+          {place.info && <p id="detailsInfo" style={{ fontStyle: 'italic', color: '#333', marginBottom: '20px', borderLeft: '3px solid var(--accent)', paddingLeft: '15px' }}>{place.info}</p>}
+          {place.details && <div id="detailsText" style={{ fontSize: '1rem', lineHeight: '1.7', color: '#444', whiteSpace: 'pre-wrap' }}>{place.details}</div>}
 
-          <div style={{ marginTop: 12 }}>
-            <button className="btn-primary" onClick={() => onOpenTrip()}>
+          <div style={{ marginTop: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button className="btn-primary" onClick={() => onOpenTrip()} style={{ flex: '1 1 auto', padding: '10px 20px', borderRadius: '8px', border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: '600', transition: 'transform 0.2s' }}>
               Plan Trip
             </button>
-            <button style={{ marginLeft: 8 }} onClick={() => onOpenUpload()}>
+            <button onClick={() => onOpenUpload()} style={{ flex: '1 1 auto', padding: '10px 20px', borderRadius: '8px', border: 'none', background: '#2c3e50', color: 'white', cursor: 'pointer', fontWeight: '600', transition: 'transform 0.2s' }}>
               Upload Story
             </button>
           </div>
-          <div style={{ marginTop: 20 }}>
-            <h3 style={{ fontSize: 14, marginBottom: 6 }}>Stories</h3>
-            {stories.length === 0 && <div style={{ fontSize: 12, color: '#666' }}>No stories yet.</div>}
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {stories.map(st => (
-                <li key={st.id} style={{ marginBottom: 8 }}>
-                  <div style={{ fontSize: 12 }}><strong>{st.caption || 'Untitled'}</strong></div>
-                  {st.imageUrl && <img src={st.imageUrl} alt={st.caption} style={{ maxWidth: '100%', borderRadius: 4, marginTop: 4 }} />}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {stories.length > 0 && (
+            <div style={{ marginTop: '20px' }}>
+              <h3 style={{ fontSize: '14px', marginBottom: '10px', fontWeight: '600' }}>Community Stories</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {stories.map(st => (
+                  <div key={st.id} style={{ padding: '10px', background: '#f9f9f9', borderRadius: '8px' }}>
+                    {st.imageUrl && <img src={st.imageUrl} alt={st.caption} style={{ width: '100%', borderRadius: '6px', marginBottom: '8px' }} />}
+                    <div style={{ fontSize: '13px', color: '#333' }}>{st.caption || 'Untitled'}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="drawer-body">
-          <div style={{ color: '#666' }}>No place selected</div>
+        <div className="details-content">
+          <div style={{ color: '#999', textAlign: 'center', padding: '40px 20px' }}>Select a heritage site to view details</div>
         </div>
       )}
     </aside>

@@ -206,21 +206,12 @@ export default function App() {
       {/* Logout button */}
       {user && (
         <button
+          className="logout-btn"
           onClick={() => signOut(auth)}
-          style={{
-            position: 'absolute',
-            right: 20,
-            top: 15,
-            zIndex: 3000,
-            padding: '6px 10px',
-            background: '#222',
-            color: '#fff',
-            borderRadius: 6,
-            border: 'none',
-            cursor: 'pointer'
-          }}
+          title="Sign out"
         >
-          Logout
+          <i className="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
         </button>
       )}
     </div>
