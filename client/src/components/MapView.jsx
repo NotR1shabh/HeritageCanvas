@@ -13,10 +13,17 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
 });
 
+const CATEGORY_ICON_OVERRIDES = {
+  // The asset in client/public/filters is capitalized; Vite dev server will fall back to index.html
+  // for missing static assets, which makes the marker icon effectively invisible.
+  tales_and_epics: '/filters/Tales_and_epics.png'
+};
+
 const getIconForCategory = (category) => {
   if (!category) return new L.Icon.Default();
-  const safeName = category.replace(/\s+/g, '_');
-  const url = `/filters/${safeName}.png`;
+  const key = String(category).trim();
+  const safeName = key.replace(/\s+/g, '_');
+  const url = CATEGORY_ICON_OVERRIDES[key] || `/filters/${safeName}.png`;
   return L.icon({
     iconUrl: url,
     iconSize: [36, 36],
@@ -25,7 +32,7 @@ const getIconForCategory = (category) => {
   });
 };
 
-export default function MapView({ places, center = [20.5937, 78.9629], zoom = 5, onSelectPlace, focusedPlace, selectedPlace }) {
+export default function MapView({ places, center = [20.5937, 78.9629], zoom = 5, onSelectPlace, focusedPlace, selectedPlace, theme = 'light' }) {
   const items = useMemo(() => places || [], [places]);
   const markerRefs = useRef({});
   const markerLayerRef = useRef(null);
@@ -37,11 +44,15 @@ export default function MapView({ places, center = [20.5937, 78.9629], zoom = 5,
     };
   }, [items]);
 
+  const tileUrl = theme === 'dark'
+    ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+
   return (
-    <div style={{ height: '100vh', width: '100%' }}>
-      <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }}>
+    <div id="map-root" style={{ height: '100vh', width: '100%' }}>
+      <MapContainer center={center} zoom={zoom} style={{ height: '100%', width: '100%' }} key={theme}>
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          url={tileUrl}
           attribution='© OpenStreetMap contributors, © CARTO'
         />
         <MapController 
@@ -56,6 +67,8 @@ export default function MapView({ places, center = [20.5937, 78.9629], zoom = 5,
           if (!pos) return null;
           const icon = getIconForCategory(p.category);
           const markerId = `${p.name}-${i}`;
+          const summary = p.brief || p.info || p.description;
+          const popupFacts = Array.isArray(p.quickFacts) ? p.quickFacts.slice(0, 2) : [];
           return (
             <Marker 
               key={markerId} 
@@ -78,15 +91,22 @@ export default function MapView({ places, center = [20.5937, 78.9629], zoom = 5,
                 >
                   {p.image_url && (
                     <img
-                      src={p.image_url}
+                      src={`${String(p.image_url).startsWith('/') ? p.image_url : '/' + p.image_url}`}
                       alt={p.name}
                       style={{ width: '100%', height: 140, objectFit: 'cover', borderRadius: 6 }}
                     />
                   )}
                   <h3 style={{ margin: '8px 0' }}>{p.name}</h3>
-                  <div style={{ fontSize: 13 }}>{p.info}</div>
-                  <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>Year: {p.year}</div>
-                  <div style={{ marginTop: 8, fontSize: 12, color: '#2b7cff' }}><strong>Click here for details →</strong></div>
+                  {summary && <div style={{ fontSize: 13 }}>{summary}</div>}
+                  {popupFacts.length > 0 && (
+                    <ul style={{ margin: '8px 0 0', paddingLeft: '18px', fontSize: 12, color: 'var(--muted-text)' }}>
+                      {popupFacts.map(({ label, value }) => (
+                        <li key={`${p.name}-${label}`}>{label}: {value}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <div style={{ marginTop: 6, fontSize: 12, color: 'var(--muted-text)' }}>Year: {p.year || 'N/A'}</div>
+                  <div style={{ marginTop: 8, fontSize: 12, color: 'var(--accent)' }}><strong>Click here for details →</strong></div>
                 </div>
               </Popup>
             </Marker>

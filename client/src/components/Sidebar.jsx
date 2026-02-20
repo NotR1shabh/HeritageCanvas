@@ -1,6 +1,7 @@
 // client/src/components/Sidebar.jsx
 import React, { useMemo, useState, useEffect } from 'react';
 import { auth } from '../firebase';
+import { apiUrl } from '../apiBase';
 
 export function useUserTrips() {
   const [trips, setTrips] = useState([]);
@@ -10,7 +11,7 @@ export function useUserTrips() {
       if (!auth.currentUser) return setTrips([]);
       try {
         const token = await auth.currentUser.getIdToken();
-        const resp = await fetch('http://localhost:4000/api/trips', { headers: { Authorization: `Bearer ${token}` }});
+        const resp = await fetch(apiUrl('/api/trips'), { headers: { Authorization: `Bearer ${token}` }});
         const data = await resp.json();
         if (resp.ok && mounted) setTrips(data.trips || []);
       } catch (e) {

@@ -4,13 +4,22 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+require('dotenv').config();
+console.log('GOOGLE_API_KEY present?', !!process.env.GOOGLE_API_KEY);
 const { admin, db, bucket } = require('./firebaseAdmin');
 const qualityCheck = require('./hooks/qualityCheck');
 const { v4: uuidv4 } = require('uuid');
+const { getPersonaForCategory } = require('./personas');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const IS_PROD = process.env.NODE_ENV === 'production';
+const CLIENT_PUBLIC_DIR = path.join(__dirname, '..', 'client', 'public');
+const CLIENT_DIST_DIR = path.join(__dirname, '..', 'client', 'dist');
+const LEGACY_PUBLIC_DIR = path.join(__dirname, 'legacy-public');
 
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -119,15 +128,41 @@ app.post('/api/upload-story', verifyToken, upload.single('image'), async (req, r
 app.get('/api/data', (req, res) => {
   const dataPath = path.join(__dirname, 'data.json');
   if (fs.existsSync(dataPath)) {
+    // Ensure clients don't cache dataset changes during development.
+    res.setHeader('Cache-Control', 'no-store');
     return res.sendFile(dataPath);
   }
   return res.status(404).json({ error: 'data_not_found' });
 });
 
-// Serve static files for images and filters
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
-app.use('/filters', express.static(path.join(__dirname, 'public/filters')));
-app.use('/public', express.static(path.join(__dirname, 'public')));
+// Legacy static UI (kept for backward compatibility)
+// - /public/index.html + /public/script.js live in server/legacy-public
+// - /public/images and /public/filters are mapped to the authoritative frontend assets
+if (fs.existsSync(LEGACY_PUBLIC_DIR)) {
+  app.use('/public', express.static(LEGACY_PUBLIC_DIR));
+}
+app.get('/public/data.json', (req, res) => res.redirect(301, '/api/data'));
+
+if (IS_PROD) {
+  // Production: serve Vite build output from client/dist
+  if (fs.existsSync(CLIENT_DIST_DIR)) {
+    app.use(express.static(CLIENT_DIST_DIR));
+    // Back-compat: allow old /public/images and /public/filters URLs
+    app.use('/public/images', express.static(path.join(CLIENT_DIST_DIR, 'images')));
+    app.use('/public/filters', express.static(path.join(CLIENT_DIST_DIR, 'filters')));
+  } else {
+    console.warn('Production mode but client/dist not found at', CLIENT_DIST_DIR);
+  }
+} else {
+  // Development: keep assets available directly from the API server (useful for /public/* legacy page)
+  // Primary dev experience should still be via Vite (client) for frontend.
+  if (fs.existsSync(CLIENT_PUBLIC_DIR)) {
+    app.use('/images', express.static(path.join(CLIENT_PUBLIC_DIR, 'images')));
+    app.use('/filters', express.static(path.join(CLIENT_PUBLIC_DIR, 'filters')));
+    app.use('/public/images', express.static(path.join(CLIENT_PUBLIC_DIR, 'images')));
+    app.use('/public/filters', express.static(path.join(CLIENT_PUBLIC_DIR, 'filters')));
+  }
+}
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -159,6 +194,30 @@ app.get('/api/place-stories/:placeId', async (req, res) => {
     return res.status(500).json({ error: 'server_error', detail: err.message });
   }
 });
+
+app.use('/api', chatRoutes);
+
+// Get persona info for a category
+app.get('/api/persona/:category', (req, res) => {
+  try {
+    const { category } = req.params;
+    const persona = getPersonaForCategory(category);
+    return res.json(persona);
+  } catch (err) {
+    console.error('persona error', err);
+    return res.status(500).json({ error: 'server_error', detail: err.message });
+  }
+});
+
+// SPA fallback (production only)
+// Important: do not hijack API or legacy routes.
+if (IS_PROD && fs.existsSync(path.join(CLIENT_DIST_DIR, 'index.html'))) {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    if (req.path.startsWith('/public')) return next();
+    return res.sendFile(path.join(CLIENT_DIST_DIR, 'index.html'));
+  });
+}
 
 const PORT = process.env.PORT || 4000;
 const server = app.listen(PORT, () => {

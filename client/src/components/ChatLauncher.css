@@ -1,0 +1,41 @@
+.chat-launcher {
+  position: fixed;
+  top: 12px;
+  right: 18px;
+  z-index: 2200;
+}
+
+.chat-launcher-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--glass);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, color 180ms ease;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.chat-launcher-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.chat-launcher-btn:active {
+  transform: translateY(0px) scale(1.0);
+}
+
+.chat-launcher-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

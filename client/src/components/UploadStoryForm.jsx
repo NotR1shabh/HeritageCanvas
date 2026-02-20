@@ -1,6 +1,7 @@
 // client/src/components/UploadStoryForm.jsx
 import React, { useState } from 'react';
 import { auth } from '../firebase';
+import { apiUrl } from '../apiBase';
 
 export default function UploadStoryForm({ place, isOpen, onClose }) {
   const [file, setFile] = useState(null);
@@ -24,7 +25,7 @@ export default function UploadStoryForm({ place, isOpen, onClose }) {
       fd.append('placeId', place?.id || place?.placeId || place?.name || '');
       fd.append('caption', caption || '');
 
-      const resp = await fetch('http://localhost:4000/api/upload-story', {
+      const resp = await fetch(apiUrl('/api/upload-story'), {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: fd

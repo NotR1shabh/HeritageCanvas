@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ThemeToggle from './ThemeToggle';
 
 const FILTERS = [
   { id: 'all', icon: 'fa-globe-asia', label: 'All' },
@@ -25,7 +26,12 @@ export default function EnhancedSidebar({
   activeCategory,
   activeEpic,
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  theme,
+  onToggleTheme,
+  user,
+  onLoginClick,
+  onLogoutClick
 }) {
   const [showEpicSubfilters, setShowEpicSubfilters] = useState(false);
 
@@ -82,7 +88,7 @@ export default function EnhancedSidebar({
         {FILTERS.map((filter) => (
           <React.Fragment key={filter.id}>
             <button
-              className={`filter-btn ${filter.isEpic ? 'epic-filter-btn' : ''} ${
+              className={`filter-btn category-button ${filter.isEpic ? 'epic-filter-btn' : ''} ${
                 activeCategory === filter.id ? 'active' : ''
               }`}
               onClick={() => handleCategoryClick(filter.id)}
@@ -97,7 +103,7 @@ export default function EnhancedSidebar({
                 {EPIC_SUBFILTERS.map((epic) => (
                   <button
                     key={epic.id}
-                    className={`subfilter-btn ${activeEpic === epic.id ? 'active' : ''}`}
+                    className={`subfilter-btn category-button ${activeEpic === epic.id ? 'active' : ''}`}
                     onClick={() => handleEpicClick(epic.id)}
                     title={epic.label}
                   >
@@ -110,6 +116,26 @@ export default function EnhancedSidebar({
           </React.Fragment>
         ))}
       </nav>
+
+      <div className="sidebar-footer">
+        <div className="sidebar-footer-actions">
+          <ThemeToggle
+            theme={theme}
+            onToggle={onToggleTheme}
+            className="sidebar-footer-btn sidebar-theme-btn"
+            showLabel={expanded}
+          />
+
+          <button
+            className={`sidebar-auth-btn sidebar-footer-btn ${user ? 'logout' : 'login'}`}
+            onClick={user ? onLogoutClick : onLoginClick}
+            title={user ? 'Sign out' : 'Sign in'}
+          >
+            <i className={`fas ${user ? 'fa-sign-out-alt' : 'fa-sign-in-alt'}`}></i>
+            <span>{user ? 'Logout' : 'Login'}</span>
+          </button>
+        </div>
+      </div>
     </aside>
   );
 }

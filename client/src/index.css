@@ -6,8 +6,35 @@
   --sidebar-expanded-width: 340px;
   --accent: #3498db;
   --bg: #ffffff;
+  --text: #1b1f2a;
+  --muted-text: #555f71;
   --glass: rgba(255,255,255,0.9);
+  --card-bg: #ffffff;
+  --popup-bg: #ffffff;
+  --popup-text: #1b1f2a;
+  --border: rgba(0,0,0,0.08);
   --shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* Dark theme overrides */
+:root.dark-mode {
+  --accent: #4ea0e8;
+  --bg: #0e1014;
+  --text: #e6edf3;
+  --muted-text: #b6c2cf;
+  --glass: rgba(23,25,33,0.75);
+  --card-bg: #151822;
+  --popup-bg: #151822;
+  --popup-text: #e6edf3;
+  --border: rgba(255,255,255,0.08);
+  --shadow: 0 10px 28px rgba(0,0,0,0.45);
+  
+  /* Refined dark UI dimming */
+  --filter-bg: #1b222d;
+  --filter-bg-active: #2a3544;
+  --marker-dim: brightness(0.88);
+  --card-bg-dark: #181b20;
+  --panel-bg-dark: #14171c;
 }
 
 * {
@@ -22,10 +49,57 @@ html, body, #root {
 }
 
 body {
-  background: #f3f6fa;
+  background: var(--bg);
+  color: var(--text);
 }
 
 /* Hide Leaflet default zoom controls */
 .leaflet-control-zoom {
   display: none !important;
+}
+
+/* Dim map markers in dark mode */
+:root.dark-mode .leaflet-marker-icon {
+  filter: var(--marker-dim);
+}
+
+/* Leaflet popups + tooltips adapt to theme */
+.leaflet-popup-content-wrapper {
+  background: var(--popup-bg);
+  color: var(--popup-text);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.leaflet-popup-tip {
+  background: var(--popup-bg);
+}
+.leaflet-tooltip {
+  background: var(--popup-bg);
+  color: var(--popup-text);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+/* Generic elements that should reflect theme */
+.modal-box,
+.auth-prompt-box,
+.auth-form-box,
+.details-panel,
+.timeline,
+.flashcard,
+.card {
+  background: var(--card-bg);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
 }

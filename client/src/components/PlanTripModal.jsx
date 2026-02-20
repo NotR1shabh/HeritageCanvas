@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { auth } from '../firebase';
+import { apiUrl } from '../apiBase';
 
 export default function PlanTripModal({ place, isOpen, onClose }) {
   const [tripTitle, setTripTitle] = useState('');
@@ -13,7 +14,7 @@ export default function PlanTripModal({ place, isOpen, onClose }) {
     const token = await auth.currentUser.getIdToken();
     setSaving(true);
     try {
-      const resp = await fetch('http://localhost:4000/api/trips', {
+      const resp = await fetch(apiUrl('/api/trips'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ title: tripTitle || place?.name || 'Untitled Trip', items: tripItems })

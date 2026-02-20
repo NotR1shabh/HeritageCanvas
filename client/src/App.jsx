@@ -4,12 +4,178 @@ import './App.css';
 import MapView from './components/MapView';
 import EnhancedSidebar from './components/EnhancedSidebar';
 import Timeline from './components/Timeline';
+import TimelineNotifierPanel from './components/TimelineNotifierPanel';
 import DetailsPanel from './components/DetailsPanel';
 import PlanTripModal from './components/PlanTripModal';
 import UploadStoryForm from './components/UploadStoryForm';
 import { auth } from './firebase';
 import AuthForm from './components/AuthForm';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import ChatBot from './components/ChatBot';
+import ChatLauncher from './components/ChatLauncher';
+import ChatOverlay from './components/ChatOverlay';
+import PERSONAS from './data/personas';
+import './styles/timeline-notifier.css';
+
+const QUICK_FACT_FIELDS = [
+  ['Location', 'location'],
+  ['Built By', 'builder'],
+  ['Architecture', 'architectureType'],
+  ['Materials', 'materials'],
+  ['Key Features', 'keyFeatures'],
+  ['Current Status', 'currentStatus'],
+  ['Cultural Importance', 'culturalImportance'],
+  ['Origin Region', 'originRegion'],
+  ['Origin Period', 'originPeriod'],
+  ['Religion', 'religion'],
+  ['Cultural Group', 'culturalGroup'],
+  ['Instruments', 'instruments'],
+  ['Ingredients', 'ingredients'],
+  ['Preparation Style', 'preparationStyle'],
+  ['Human Interaction', 'humanInteractionType'],
+  ['Species Involved', 'speciesInvolved'],
+  ['Ecological Importance', 'ecologicalImportance'],
+  ['Conservation Legacy', 'conservationLegacy']
+];
+
+const SKIP_DYNAMIC_KEYS = new Set([
+  'name',
+  'coords',
+  'category',
+  'year',
+  'image_url',
+  'imageUrl',
+  'info',
+  'details',
+  'brief',
+  'description',
+  'epic',
+  'placeId',
+  'id',
+  'createdAt',
+  'updatedAt',
+  'quickFacts',
+  'stories',
+  'location',
+  'built by',
+  'built_by',
+  'builtBy',
+  'created by',
+  'architecture type',
+  'architecture_type',
+  'art style type',
+  'style type',
+  'style features',
+  'style_features',
+  'materials',
+  'materials used',
+  'materials_used',
+  'key features',
+  'key_features',
+  'keyfeatures',
+  'current status',
+  'current_status',
+  'cultural importance',
+  'cultural_importance',
+  'origin region',
+  'origin_region',
+  'origin period',
+  'origin_period',
+  'religion',
+  'cultural group',
+  'cultural_group',
+  'human interaction type',
+  'human_interaction_type',
+  'species involved',
+  'species_involved',
+  'ecological importance',
+  'ecological_importance',
+  'conservation legacy',
+  'conservation_legacy',
+  'ingredients',
+  'preparation style',
+  'preparation_style',
+  'instruments used',
+  'instruments_used'
+]);
+
+const isMeaningful = (value) => {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  return true;
+};
+
+const pickField = (source, candidates) => {
+  for (const key of candidates) {
+    if (!key) continue;
+    if (Object.prototype.hasOwnProperty.call(source, key)) {
+      const value = source[key];
+      if (isMeaningful(value)) return value;
+    }
+  }
+  return undefined;
+};
+
+const formatLabel = (rawKey) => rawKey
+  .replace(/[_-]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .replace(/\b\w/g, (c) => c.toUpperCase());
+
+const buildQuickFacts = (normalized, original) => {
+  const facts = [];
+  const seen = new Set();
+  const addFact = (label, value) => {
+    if (!isMeaningful(value) || seen.has(label)) return;
+    facts.push({ label, value });
+    seen.add(label);
+  };
+
+  QUICK_FACT_FIELDS.forEach(([label, key]) => addFact(label, normalized[key]));
+
+  Object.entries(original).forEach(([rawKey, rawValue]) => {
+    if (SKIP_DYNAMIC_KEYS.has(rawKey)) return;
+    if (!isMeaningful(rawValue)) return;
+    if (typeof rawValue === 'object') return;
+    const label = formatLabel(rawKey);
+    addFact(label, rawValue);
+  });
+
+  return facts;
+};
+
+const normalizePlace = (item) => {
+  const normalized = { ...item };
+  if (item.image_url) {
+    normalized.image_url = item.image_url.startsWith('/') ? item.image_url : '/' + item.image_url;
+  }
+
+  const getField = (keys) => pickField(item, keys);
+
+  normalized.brief = getField(['brief', 'info']);
+  normalized.description = getField(['description', 'details', 'brief']);
+  normalized.location = getField(['location']);
+  normalized.builder = getField(['built by', 'built_by', 'builtBy', 'created by']);
+  normalized.architectureType = getField(['architecture type', 'architecture_type', 'art style type', 'style type']);
+  normalized.materials = getField(['materials', 'materials used', 'materials_used']);
+  normalized.keyFeatures = getField(['key features', 'key_features', 'keyfeatures', 'style features', 'style_features']);
+  normalized.currentStatus = getField(['current status', 'current_status']);
+  normalized.culturalImportance = getField(['cultural importance', 'cultural_importance']);
+  normalized.originRegion = getField(['origin region', 'origin_region']);
+  normalized.originPeriod = getField(['origin period', 'origin_period']);
+  normalized.religion = getField(['religion']);
+  normalized.culturalGroup = getField(['cultural group', 'cultural_group']);
+  normalized.humanInteractionType = getField(['human interaction type', 'human_interaction_type']);
+  normalized.speciesInvolved = getField(['species involved', 'species_involved']);
+  normalized.ecologicalImportance = getField(['ecological importance', 'ecological_importance']);
+  normalized.conservationLegacy = getField(['conservation legacy', 'conservation_legacy']);
+  normalized.ingredients = getField(['ingredients']);
+  normalized.preparationStyle = getField(['preparation style', 'preparation_style']);
+  normalized.instruments = getField(['instruments used', 'instruments_used']);
+
+  normalized.quickFacts = buildQuickFacts(normalized, item);
+  return normalized;
+};
 
 export default function App() {
   const [places, setPlaces] = useState([]);
@@ -28,31 +194,36 @@ export default function App() {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // 'trip' or 'story'
   const [isAuthFormOpen, setAuthFormOpen] = useState(false);
+  const [chatbotPlace, setChatbotPlace] = useState(null); // Track which place chatbot is open for
+  const [chatOverlayOpen, setChatOverlayOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem('heritagecanvas_theme') : null;
+    return saved === 'dark' ? 'dark' : 'light';
+  });
+
+  // Debug chatbot state changes
+  useEffect(() => {
+    console.log('Chatbot place changed:', chatbotPlace);
+  }, [chatbotPlace]);
 
   useEffect(() => {
     console.log('Fetching heritage sites data...');
-    fetch('/api/data', { cache: 'no-cache' })
+    const url = `/api/data?ts=${Date.now()}`;
+    fetch(url, { cache: 'no-store' })
       .then(r => r.json())
       .then(d => {
         console.log('Raw API response:', d);
         const dataArray = Array.isArray(d) ? d : (d && d.items) ? d.items : [];
-        
-        // Transform relative image URLs to absolute backend URLs
-        const transformed = dataArray.map(item => ({
-          ...item,
-          image_url: item.image_url && !item.image_url.startsWith('http')
-            ? `http://localhost:4000/${item.image_url}`
-            : item.image_url
-        }));
-        
-        console.log(`Successfully loaded ${transformed.length} heritage sites`);
-        console.log('Sample transformed item:', transformed[0]);
-        setPlaces(transformed);
-        setFiltered(transformed);
+        const normalized = dataArray.map(normalizePlace);
+
+        console.log(`Successfully loaded ${normalized.length} heritage sites`);
+        console.log('Sample normalized item:', normalized[0]);
+        setPlaces(normalized);
+        setFiltered(normalized);
       })
       .catch(err => {
         console.error('Failed to load data', err);
-        alert('Error loading heritage sites data. Please check that the backend server is running on http://localhost:4000');
+        alert('Error loading heritage sites data. Please check that the backend server is running and reachable.');
       })
       .finally(() => setLoading(false));
 
@@ -61,6 +232,17 @@ export default function App() {
     });
     return () => unsub();
   }, []);
+
+  // Apply theme class to <html> and persist
+  useEffect(() => {
+    const root = document.documentElement; // <html>
+    if (theme === 'dark') {
+      root.classList.add('dark-mode');
+    } else {
+      root.classList.remove('dark-mode');
+    }
+    localStorage.setItem('heritagecanvas_theme', theme);
+  }, [theme]);
 
   // Filter logic
   useEffect(() => {
@@ -87,7 +269,18 @@ export default function App() {
     if (searchQuery) {
       const q = searchQuery.trim().toLowerCase();
       result = result.filter(p => {
-        const hay = `${p.name} ${p.info || ''} ${p.details || ''}`.toLowerCase();
+        const factsText = Array.isArray(p.quickFacts)
+          ? p.quickFacts.map(({ label, value }) => `${label} ${value || ''}`).join(' ')
+          : '';
+        const hay = [
+          p.name,
+          p.brief,
+          p.description,
+          p.location,
+          p.builder,
+          p.architectureType,
+          factsText
+        ].filter(Boolean).join(' ').toLowerCase();
         return hay.includes(q);
       });
     }
@@ -184,6 +377,13 @@ export default function App() {
         >
           <i className="fas fa-bars"></i>
         </button>
+        {/* Chat Launcher */}
+        <ChatLauncher onOpen={() => {
+          const currentCategory = activeCategory !== 'all' ? activeCategory : 'default';
+          const persona = PERSONAS[currentCategory] || PERSONAS.default;
+          setChatbotPlace({ ...selectedPlace, category: currentCategory });
+          setChatOverlayOpen(true);
+        }} />
       </div>
 
       {/* Sidebar */}
@@ -195,6 +395,11 @@ export default function App() {
         activeEpic={activeEpic}
         searchQuery={searchQuery}
         onSearchChange={handleSearchChange}
+        theme={theme}
+        onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+        user={user}
+        onLoginClick={() => setAuthFormOpen(true)}
+        onLogoutClick={() => signOut(auth)}
       />
 
       {/* Map */}
@@ -204,6 +409,7 @@ export default function App() {
           onSelectPlace={handleSelectPlace} 
           focusedPlace={focusedPlace} 
           selectedPlace={selectedPlace} 
+          theme={theme}
         />
       </div>
 
@@ -215,12 +421,19 @@ export default function App() {
         maxYear={2025}
       />
 
+      {/* Timeline Notifier Panel */}
+      <TimelineNotifierPanel year={activeYear} />
+
       {/* Details Panel */}
       <DetailsPanel 
         place={selectedPlace} 
         onClose={handleCloseDetails} 
         onOpenTrip={openPlanTrip}
         onOpenUpload={openUploadStory}
+        onOpenChatbot={(place) => {
+          setChatbotPlace(place);
+          setChatOverlayOpen(true);
+        }}
       />
 
       {/* Modals */}
@@ -236,27 +449,6 @@ export default function App() {
         onClose={closeModals}
       />
 
-      {/* Login/Logout button */}
-      {user ? (
-        <button
-          className="logout-btn"
-          onClick={() => signOut(auth)}
-          title="Sign out"
-        >
-          <i className="fas fa-sign-out-alt"></i>
-          <span>Logout</span>
-        </button>
-      ) : (
-        <button
-          className="logout-btn"
-          onClick={() => setAuthFormOpen(true)}
-          title="Sign in"
-        >
-          <i className="fas fa-sign-in-alt"></i>
-          <span>Login</span>
-        </button>
-      )}
-
       {/* Auth Prompt Modal */}
       {showAuthPrompt && (
         <div className="modal-overlay" onClick={() => setShowAuthPrompt(false)}>
@@ -265,7 +457,7 @@ export default function App() {
               <i className="fas fa-lock" style={{ color: 'var(--accent)', marginRight: '10px' }}></i>
               Login Required
             </h2>
-            <p style={{ textAlign: 'center', color: '#555', marginBottom: '24px', lineHeight: '1.6' }}>
+            <p style={{ textAlign: 'center', color: 'var(--muted-text)', marginBottom: '24px', lineHeight: '1.6' }}>
               Please login to {pendingAction === 'trip' ? 'plan your trip' : 'upload your story'}.
               <br />Create an account or sign in to continue.
             </p>
@@ -297,6 +489,26 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ChatBot - Original inline chatbot */}
+      {chatbotPlace && !chatOverlayOpen && (
+        <ChatBot
+          place={chatbotPlace}
+          category={chatbotPlace.category || 'default'}
+          onClose={() => setChatbotPlace(null)}
+        />
+      )}
+
+      {/* ChatOverlay - New overlay-based chat system */}
+      <ChatOverlay
+        open={chatOverlayOpen}
+        onClose={() => {
+          setChatOverlayOpen(false);
+          setChatbotPlace(null);
+        }}
+        selectedCharacter={chatbotPlace ? (PERSONAS[chatbotPlace.category] || PERSONAS.default) : PERSONAS.default}
+        selectedItem={chatbotPlace}
+      />
     </div>
   );
 }
